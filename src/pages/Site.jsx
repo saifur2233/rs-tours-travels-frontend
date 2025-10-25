@@ -476,8 +476,8 @@ export default function Site() {
                             { img: "/img/service-1.jpg", title: "Ticketing" },
                             { img: "/img/service-2.jpg", title: "Hajj Package" },
                             { img: "/img/service-3.jpg", title: "Medical Visa" },
-                            { img: "/img/service-2.jpg", title: "Umrah Visa" },
-                            { img: "/img/service-1.jpg", title: "Students Visa" },
+                            { img: "/img/service-4.jpg", title: "Umrah Visa" },
+                            { img: "/img/service-5.jpg", title: "Students Visa" },
                             { img: "/img/service-3.jpg", title: "Tourist Visa" },
                         ].map((s, idx) => (
                             <div className="col-lg-6 col-xl-4 wow fadeInUp" data-wow-delay={`${0.1 + (idx % 3) * 0.2}s`} key={`${s.title}-${idx}`}>
