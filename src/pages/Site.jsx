@@ -93,7 +93,7 @@ export default function Site() {
             {/* Topbar Start */}
             <div className="container-fluid bg-primary px-5 d-none d-lg-block">
                 <div className="row gx-0 align-items-center">
-                    <div className="col-lg-5 text-center text-lg-start mb-lg-0">
+                    <div className="col-lg-5 text-center text-md-start mb-lg-0">
                         <div className="d-flex">
                             <a href="#" className="text-white me-4">
                                 <i className="fas fa-envelope text-white me-2"></i>
