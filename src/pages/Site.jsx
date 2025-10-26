@@ -99,7 +99,7 @@ export default function Site() {
                                 <i className="fas fa-envelope text-white me-2"></i>
                                 {emailText}
                             </a>
-                            <a href="#" className="text-white me-0">
+                            <a href="tel:09617616263" className="text-white me-0">
                                 <i className="fas fa-phone-alt text-white me-2"></i>
                                 {hotlineText}
                             </a>
@@ -218,10 +218,10 @@ export default function Site() {
                             </a>
                         </div>
                         <a
-                            href="#"
+                            href="tel:09617616263"
                             className="btn btn-primary border-secondary rounded-pill py-2 px-4 px-lg-3 mb-3 mb-md-3 mb-lg-0"
                         >
-                            Hotline: {hotlineText}
+                            {hotlineText}
                         </a>
                     </div>
                 </nav>
@@ -691,7 +691,7 @@ export default function Site() {
                                             <h5 className="mb-3">Quick Contact</h5>
                                             <div className="mb-3">
                                                 <h6 className="mb-0">Phone:</h6>
-                                                <a href="#" className="fs-5 text-primary">
+                                                <a href="tel:09617616263" className="fs-5 text-primary">
                                                     {hotlineText}
                                                 </a>
                                             </div>
@@ -784,7 +784,7 @@ export default function Site() {
                                 <h4 className="text-secondary mb-4">Contact Info</h4>
                                 <a href=""><i className="fa fa-map-marker-alt me-2"></i> Chowdhury Market (2nd Floor), Barura West Bazar, College Road, Barura, Comilla</a>
                                 <a href=""><i className="fas fa-envelope me-2"></i> {emailText}</a>
-                                <a href=""><i className="fas fa-phone me-2"></i> {hotlineText}</a>
+                                <a href="tel:09617616263"><i className="fas fa-phone me-2"></i> {hotlineText}</a>
                                 <div className="d-flex align-items-center">
                                     <i className="fas fa-share fa-2x text-secondary me-2"></i>
                                     <a className="btn mx-1" href=""><i className="fab fa-facebook-f"></i></a>
