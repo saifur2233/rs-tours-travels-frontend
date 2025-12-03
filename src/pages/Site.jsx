@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm, ValidationError } from "@formspree/react";
 import { toast } from "react-hot-toast";
 
 import {
-    fetchHeroBanner,
+    fetchAllHeroBanners,
+    fetchAllServices,
     fetchLogo,
     fetchHotline,
     fetchEmail,
     fetchAddress,
     fetchSocial,
+    fetchAllClientReviews,
 } from "../api";
 
 // You already have your big JSX in App.jsx. Move it here and bind to state where needed.
 export default function Site() {
-    const [hero, setHero] = useState(null);
+    const navigate = useNavigate();
+    const [heroBanners, setHeroBanners] = useState([]);
+    const [services, setServices] = useState([]);
     const [logo, setLogo] = useState(null);
     const [hotline, setHotline] = useState(null);
     const [email, setEmail] = useState(null);
     const [address, setAddress] = useState(null);
     const [social, setSocial] = useState(null);
+    const [clientReviews, setClientReviews] = useState([]);
 
-    const [state, handleSubmit] = useForm("xzzkpovp");
+    const [state, handleSubmit] = useForm("xldqnnry");
 
     useEffect(() => {
         if (state.succeeded) {
@@ -31,38 +37,107 @@ export default function Site() {
     useEffect(() => {
         (async () => {
             try {
-                const [hb, lg, hl, em, ad, so] = await Promise.all([
-                    fetchHeroBanner(),
+                const [hb, svc, lg, hl, em, ad, so, reviews] = await Promise.all([
+                    fetchAllHeroBanners(),
+                    fetchAllServices(),
                     fetchLogo(),
                     fetchHotline(),
                     fetchEmail(),
                     fetchAddress(),
                     fetchSocial(),
+                    fetchAllClientReviews(),
                 ]);
-                setHero(hb.data);
+                setHeroBanners(hb.data || []);
+                setServices(svc.data || []);
                 setLogo(lg.data);
                 setHotline(hl.data);
                 setEmail(em.data);
                 setAddress(ad.data);
                 setSocial(so.data);
+                setClientReviews(reviews.data || []);
             } catch (err) {
                 console.error("Data load failed", err);
             }
         })();
     }, []);
 
+    // jQuery plugins initialization
+    useEffect(() => {
+        const $ = window.$ || window.jQuery;
+        if (!$) return;
+
+        // Spinner: hide when page is ready
+        const hideSpinner = () => {
+            if ($("#spinner").length) {
+                $("#spinner").removeClass("show");
+            }
+        };
+        setTimeout(hideSpinner, 800);
+
+        // WOW init
+        if (window.WOW) {
+            new window.WOW().init();
+        }
+
+        // Counter-Up init - with safety check
+        setTimeout(() => {
+            if ($.fn.counterUp && $("[data-toggle='counter-up']").length) {
+                $("[data-toggle='counter-up']").counterUp({
+                    delay: 10,
+                    time: 2000,
+                });
+            }
+        }, 1000);
+
+        // Owl Carousel for testimonials - with safety check
+        setTimeout(() => {
+            if ($.fn.owlCarousel && $(".testimonial-carousel").length) {
+                $(".testimonial-carousel").owlCarousel({
+                    autoplay: true,
+                    smartSpeed: 1000,
+                    center: false,
+                    dots: true,
+                    loop: true,
+                    margin: 25,
+                    responsive: {
+                        0: { items: 1 },
+                        768: { items: 2 },
+                        1200: { items: 3 },
+                    },
+                });
+            }
+        }, 1000);
+
+        // Back to top
+        const backToTop = $(".back-to-top");
+        if (backToTop.length) {
+            const handleScroll = () => {
+                if ($(window).scrollTop() > 300) {
+                    backToTop.fadeIn("slow");
+                } else {
+                    backToTop.fadeOut("slow");
+                }
+            };
+
+            $(window).on("scroll", handleScroll);
+
+            backToTop.on("click", function (e) {
+                e.preventDefault();
+                $("html, body").animate({ scrollTop: 0 }, 600, "easeInOutExpo");
+            });
+
+            // Cleanup
+            return () => {
+                $(window).off("scroll", handleScroll);
+                backToTop.off("click");
+            };
+        }
+    }, []);
+
     const hotlineText = hotline?.number || "{hotlineText}";
     const emailText = email?.email || "{emailText}";
     const addressText = address?.text || "Chowdhury Market (2nd Floor), Barura West Bazar, College Road, Barura, Comilla";
     const logoUrl = logo?.imageUrl || "/img/logo.png";
-
-    // Example: injecting hero data (image + titles)
-    const heroImage = hero?.imageUrl || "/img/carousel-1.jpg";
-    const heroTopSubtitle = hero?.topSubtitle || "Solution For All Type Of Visas";
-    const heroTitle = hero?.title || "Immigration Process Starts Here!";
-    const heroSubtitle = hero?.subtitle || "Lorem Ipsum is simply dummy text ...";
-    const heroBtnLabel = hero?.btnLabel || "More Details";
-    const heroBtnHref = hero?.btnHref || "#";
 
     // -----
     // Paste your large JSX here (from the previous conversion) and replace static spots:
@@ -105,25 +180,7 @@ export default function Site() {
                             </a>
                         </div>
                     </div>
-                    {/* <div className="col-lg-3 row-cols-1 text-center mb-2 mb-lg-0">
-                        <div className="d-inline-flex align-items-center" style={{ height: 45 }}>
-                            <a className="btn btn-sm btn-outline-light btn-square rounded-circle me-2" href="">
-                                <i className="fab fa-twitter fw-normal text-white"></i>
-                            </a>
-                            <a className="btn btn-sm btn-outline-light btn-square rounded-circle me-2" href="">
-                                <i className="fab fa-facebook-f fw-normal text-white"></i>
-                            </a>
-                            <a className="btn btn-sm btn-outline-light btn-square rounded-circle me-2" href="">
-                                <i className="fab fa-linkedin-in fw-normal text-white"></i>
-                            </a>
-                            <a className="btn btn-sm btn-outline-light btn-square rounded-circle me-2" href="">
-                                <i className="fab fa-instagram fw-normal text-white"></i>
-                            </a>
-                            <a className="btn btn-sm btn-outline-light btn-square rounded-circle" href="">
-                                <i className="fab fa-youtube fw-normal text-white"></i>
-                            </a>
-                        </div>
-                    </div> */}
+                    
                     <div className="col-lg-4 text-center text-lg-end">
                         <div className="d-inline-flex align-items-center" style={{ height: 45 }}>
                             <a className="btn btn-sm btn-outline-light btn-square rounded-circle me-2" href="">
@@ -231,77 +288,90 @@ export default function Site() {
             {/* Carousel Start */}
             <div className="carousel-header">
                 <div id="carouselId" className="carousel slide" data-bs-ride="carousel">
-                    <ol className="carousel-indicators">
-                        <li data-bs-target="#carouselId" data-bs-slide-to="0" className="active"></li>
-                        <li data-bs-target="#carouselId" data-bs-slide-to="1"></li>
-                    </ol>
+                    {heroBanners.length > 0 && (
+                        <ol className="carousel-indicators">
+                            {heroBanners.map((_, index) => (
+                                <li
+                                    key={index}
+                                    data-bs-target="#carouselId"
+                                    data-bs-slide-to={index}
+                                    className={index === 0 ? "active" : ""}
+                                ></li>
+                            ))}
+                        </ol>
+                    )}
                     <div className="carousel-inner" role="listbox">
-                        <div className="carousel-item active">
-                            <img src="/img/carousel-1.jpg" className="img-fluid" alt="Image" />
-                            <div className="carousel-caption">
-                                <div className="text-center p-4" style={{ maxWidth: 900 }}>
-                                    <h4
-                                        className="text-white text-uppercase fw-bold mb-3 mb-md-4 wow fadeInUp"
-                                        data-wow-delay="0.1s"
-                                    >
-                                        Solution For All Type Of Ticketing & Visas Services
-                                    </h4>
-                                    <h1
-                                        className="display-1 text-capitalize text-white mb-3 mb-md-4 wow fadeInUp"
-                                        data-wow-delay="0.3s"
-                                    >
-                                        Ticketing & Visa Process Starts Here!
-                                    </h1>
-                                    {/* <p
-                                        className="text-white mb-4 mb-md-5 fs-5 wow fadeInUp"
-                                        data-wow-delay="0.5s"
-                                    >
-                                        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem
-                                        Ipsum has been the industry's standard dummy text ever since the 1500s,
-                                    </p> */}
-                                    <a
-                                        className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5 wow fadeInUp"
-                                        data-wow-delay="0.7s"
-                                        href="#"
-                                    >
-                                        Contact Us
-                                    </a>
+                        {heroBanners.length > 0 ? (
+                            heroBanners.map((banner, index) => (
+                                <div key={banner._id || index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
+                                    <img src={banner.imageUrl} className="img-fluid" alt="Hero Banner" />
+                                    <div className="carousel-caption">
+                                        <div className="text-center p-4" style={{ maxWidth: 900 }}>
+                                            {banner.topSubtitle && (
+                                                <h5
+                                                    className="text-white text-uppercase fw-bold mb-3 mb-md-4 wow fadeInUp"
+                                                    data-wow-delay="0.1s"
+                                                >
+                                                    {banner.topSubtitle}
+                                                </h5>
+                                            )}
+                                            {banner.title && (
+                                                <h1
+                                                    className="display-1 text-capitalize text-white mb-3 mb-md-4 wow fadeInUp"
+                                                    data-wow-delay="0.3s"
+                                                >
+                                                    {banner.title}
+                                                </h1>
+                                            )}
+                                            {banner.subtitle && (
+                                                <p
+                                                    className="text-white mb-4 mb-md-5 fs-5 wow fadeInUp"
+                                                    data-wow-delay="0.5s"
+                                                >
+                                                    {banner.subtitle}
+                                                </p>
+                                            )}
+                                            {banner.btnLabel && (
+                                                <a
+                                                    className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5 wow fadeInUp"
+                                                    data-wow-delay="0.7s"
+                                                    href={banner.btnHref || "#"}
+                                                >
+                                                    {banner.btnLabel}
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="carousel-item active">
+                                <img src="/img/carousel-1.jpg" className="img-fluid" alt="Default Banner" />
+                                <div className="carousel-caption">
+                                    <div className="text-center p-4" style={{ maxWidth: 900 }}>
+                                        <h5
+                                            className="text-white text-uppercase fw-bold mb-3 mb-md-4 wow fadeInUp"
+                                            data-wow-delay="0.1s"
+                                        >
+                                            Solution For All Type Of Ticketing & Visas Services
+                                        </h5>
+                                        <h1
+                                            className="display-1 text-capitalize text-white mb-3 mb-md-4 wow fadeInUp"
+                                            data-wow-delay="0.3s"
+                                        >
+                                            Ticketing & Visa Process Starts Here!
+                                        </h1>
+                                        <a
+                                            className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5 wow fadeInUp"
+                                            data-wow-delay="0.7s"
+                                            href="#"
+                                        >
+                                            Contact Us
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="carousel-item">
-                            <img src="/img/carousel-2.jpg" className="img-fluid" alt="Image" />
-                            <div className="carousel-caption">
-                                <div className="text-center p-4" style={{ maxWidth: 900 }}>
-                                    <h5
-                                        className="text-white text-uppercase fw-bold mb-3 mb-md-4 wow fadeInUp"
-                                        data-wow-delay="0.1s"
-                                    >
-                                        Solution For All Type Of Ticketing & Flight Booking
-                                    </h5>
-                                    <h1
-                                        className="display-1 text-capitalize text-white mb-3 mb-md-4 wow fadeInUp"
-                                        data-wow-delay="0.3s"
-                                    >
-                                        Best Ticketing & Flight Booking
-                                    </h1>
-                                    {/* <p
-                                        className="text-white mb-4 mb-md-5 fs-5 wow fadeInUp"
-                                        data-wow-delay="0.5s"
-                                    >
-                                        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem
-                                        Ipsum has been the industry's standard dummy text ever since the 1500s,
-                                    </p> */}
-                                    <a
-                                        className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5 wow fadeInUp"
-                                        data-wow-delay="0.7s"
-                                        href="#"
-                                    >
-                                        Contact Us
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                     <button className="carousel-control-prev" type="button" data-bs-target="#carouselId" data-bs-slide="prev">
                         <span className="carousel-control-prev-icon bg-secondary wow fadeInLeft" data-wow-delay="0.2s" aria-hidden="false"></span>
@@ -361,11 +431,9 @@ export default function Site() {
                         </div>
                         <div className="col-xl-7 wow fadeInRight" data-wow-delay="0.3s">
                             <h5 className="sub-title pe-3">About the company</h5>
-                            <h1 className="display-5 mb-4">We’re Trusted Ticketing & Flight Booking Agency.</h1>
+                            <h1 className="display-5 mb-4">We're Trusted Ticketing & Flight Booking Agency.</h1>
                             <p className="mb-4">
-                                Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt architecto consectetur iusto perferendis
-                                blanditiis assumenda dignissimos, commodi fuga culpa earum explicabo libero sint est mollitia saepe!
-                                Sequi asperiores rerum nemo!
+                                We specialize in providing comprehensive travel solutions including domestic and international flight bookings, Hajj and Umrah packages, visa processing for multiple countries, and personalized travel consultation services. Our commitment to excellence, competitive pricing, and customer-first approach ensures that every journey with us is smooth, secure, and memorable, making us your reliable partner for all travel needs.
                             </p>
                             <div className="row gy-4 align-items-center">
                                 <div className="col-12 col-sm-6 d-flex align-items-center">
@@ -381,7 +449,7 @@ export default function Site() {
                                         <div className="mb-2">
                                             <i className="fas fa-ticket-alt fa-4x text-primary"></i>
                                         </div>
-                                        <h1 className="display-5 fw-bold mb-2">34</h1>
+                                        <h1 className="display-5 fw-bold mb-2">5</h1>
                                         <p className="text-muted mb-0">Years of Experience</p>
                                     </div>
                                 </div>
@@ -410,9 +478,9 @@ export default function Site() {
                                         </div>
                                         <div className="d-flex flex-column justify-content-center">
                                             <span className="text-primary">Have any questions?</span>
-                                            <span className="text-secondary fw-bold fs-5" style={{ letterSpacing: 2 }}>
+                                            <a href="tel:09617616263" className="text-secondary fw-bold fs-5" style={{ letterSpacing: 2 }}>
                                                 Free: {hotlineText}
-                                            </span>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -428,10 +496,10 @@ export default function Site() {
                 <div className="container py-5">
                     <div className="row g-4">
                         {[
-                            { icon: "fa-passport", title: "Visa Categories", value: "31", suffix: "+" },
-                            { icon: "fa-users", title: "Team Members", value: "377", suffix: "+" },
-                            { icon: "fa-user-check", title: "Visa Process", value: "4.9", suffix: "K" },
-                            { icon: "fa-handshake", title: "Success Rates", value: "98", suffix: "%" },
+                            { icon: "fa-passport", title: "Visa Categories", value: "11", suffix: "+" },
+                            { icon: "fa-users", title: "Team Members", value: "10", suffix: "+" },
+                            { icon: "fa-user-check", title: "Visa Process", value: "10", suffix: "K" },
+                            { icon: "fa-handshake", title: "Success Rates", value: "100", suffix: "%" },
                         ].map((c, idx) => (
                             <div className="col-12 col-sm-6 col-md-6 col-xl-3 wow fadeInUp" data-wow-delay={`${0.1 + idx * 0.2}s`} key={c.title}>
                                 <div className="counter">
@@ -466,56 +534,105 @@ export default function Site() {
                         </div>
                         <h1 className="display-5 mb-4">Enabling Your Immigration Successfully</h1>
                         <p className="mb-0">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat deleniti amet at atque sequi quibusdam
-                            cumque itaque repudiandae temporibus, eius nam mollitia voluptas maxime veniam necessitatibus saepe in ab?
-                            Repellat!
+                            At RS Tours & Travels, we provide comprehensive visa processing and ticketing services designed to make your journey seamless and stress-free. From tourist visas and student permits to Hajj and Umrah packages, our experienced team offers expert guidance, complete documentation support, and personalized assistance at every step.
                         </p>
                     </div>
                     <div className="row g-4">
-                        {[
-                            { img: "/img/service-1.jpg", title: "Ticketing" },
-                            { img: "/img/service-2.jpg", title: "Hajj Package" },
-                            { img: "/img/service-3.jpg", title: "Medical Visa" },
-                            { img: "/img/service-4.jpg", title: "Umrah Visa" },
-                            { img: "/img/service-5.jpg", title: "Students Visa" },
-                            { img: "/img/service-6.jpg", title: "Tourist Visa" },
-                        ].map((s, idx) => (
-                            <div className="col-lg-6 col-xl-4 wow fadeInUp" data-wow-delay={`${0.1 + (idx % 3) * 0.2}s`} key={`${s.title}-${idx}`}>
-                                <div className="service-item">
-                                    <div className="service-inner">
-                                        <div className="service-img">
-                                            <img src={s.img} className="img-fluid w-100 rounded" alt="Service" />
-                                        </div>
-                                        <div className="service-title">
-                                            <div className="service-title-name">
-                                                <div className="bg-primary text-center rounded p-3 mx-5 mb-4">
-                                                    <a href="#" className="h4 text-white mb-0">
-                                                        {s.title}
-                                                    </a>
-                                                </div>
-                                                <a className="btn bg-light text-secondary rounded-pill py-3 px-5 mb-4" href="#">
-                                                    Explore More
-                                                </a>
+                        {services.length > 0 ? (
+                            services.map((svc, idx) => (
+                                <div className="col-lg-6 col-xl-4 wow fadeInUp" data-wow-delay={`${0.1 + (idx % 3) * 0.2}s`} key={svc._id || idx}>
+                                    <div className="service-item">
+                                        <div className="service-inner">
+                                            <div className="service-img">
+                                                <img src={svc.service_img} className="img-fluid w-100 rounded" alt={svc.service_name} />
                                             </div>
-                                            <div className="service-content pb-4">
-                                                <a href="#">
-                                                    <h4 className="text-white mb-4 py-3">{s.title}</h4>
-                                                </a>
-                                                <div className="px-4">
-                                                    <p className="mb-4">
-                                                        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Mollitia fugit dolores nesciunt
-                                                        adipisci obcaecati veritatis cum, ratione aspernatur autem velit.
-                                                    </p>
-                                                    <a className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5" href="#">
+                                            <div className="service-title">
+                                                <div className="service-title-name">
+                                                    <div className="bg-primary text-center rounded p-3 mx-5 mb-4">
+                                                        <button
+                                                            onClick={() => navigate(`/service/${svc._id}`)}
+                                                            className="h4 text-white mb-0"
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                                        >
+                                                            {svc.service_name}
+                                                        </button>
+                                                    </div>
+                                                    <button
+                                                        className="btn bg-light text-secondary rounded-pill py-3 px-5 mb-4"
+                                                        onClick={() => navigate(`/service/${svc._id}`)}
+                                                    >
                                                         Explore More
-                                                    </a>
+                                                    </button>
+                                                </div>
+                                                <div className="service-content pb-4">
+                                                    <button
+                                                        onClick={() => navigate(`/service/${svc._id}`)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                                    >
+                                                        <h4 className="text-white mb-4 py-3">{svc.service_name}</h4>
+                                                    </button>
+                                                    <div className="px-4">
+                                                        <p className="mb-4">
+                                                            {svc.service_short_desc}
+                                                        </p>
+                                                        <button
+                                                            className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5"
+                                                            onClick={() => navigate(`/service/${svc._id}`)}
+                                                        >
+                                                            Explore More
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            [
+                                { img: "/img/service-1.jpg", title: "Ticketing", desc: "Professional ticketing services for all your travel needs" },
+                                { img: "/img/service-2.jpg", title: "Hajj Package", desc: "Complete Hajj packages with accommodation and guidance" },
+                                { img: "/img/service-3.jpg", title: "Medical Visa", desc: "Fast medical visa processing for urgent healthcare needs" },
+                                { img: "/img/service-4.jpg", title: "Umrah Visa", desc: "Hassle-free Umrah visa services with expert support" },
+                                { img: "/img/service-5.jpg", title: "Students Visa", desc: "Student visa assistance for international education" },
+                                { img: "/img/service-6.jpg", title: "Tourist Visa", desc: "Tourist visa services for leisure and exploration" },
+                            ].map((s, idx) => (
+                                <div className="col-lg-6 col-xl-4 wow fadeInUp" data-wow-delay={`${0.1 + (idx % 3) * 0.2}s`} key={`${s.title}-${idx}`}>
+                                    <div className="service-item">
+                                        <div className="service-inner">
+                                            <div className="service-img">
+                                                <img src={s.img} className="img-fluid w-100 rounded" alt="Service" />
+                                            </div>
+                                            <div className="service-title">
+                                                <div className="service-title-name">
+                                                    <div className="bg-primary text-center rounded p-3 mx-5 mb-4">
+                                                        <a href="#" className="h4 text-white mb-0">
+                                                            {s.title}
+                                                        </a>
+                                                    </div>
+                                                    <a className="btn bg-light text-secondary rounded-pill py-3 px-5 mb-4" href="#">
+                                                        Explore More
+                                                    </a>
+                                                </div>
+                                                <div className="service-content pb-4">
+                                                    <a href="#">
+                                                        <h4 className="text-white mb-4 py-3">{s.title}</h4>
+                                                    </a>
+                                                    <div className="px-4">
+                                                        <p className="mb-4">
+                                                            {s.desc}
+                                                        </p>
+                                                        <a className="btn btn-primary border-secondary rounded-pill text-white py-3 px-5" href="#">
+                                                            Explore More
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -526,21 +643,19 @@ export default function Site() {
                 <div className="container">
                     <div className="section-title text-center mb-5 wow fadeInUp" data-wow-delay="0.1s">
                         <div className="sub-style">
-                            <h5 className="sub-title text-primary px-3">Why Choose Us</h5>
+                            <h5 className="sub-title text-center text-primary px-3">Why Choose Us</h5>
                         </div>
-                        <h1 className="display-5 mb-4">Offer Tailor Made Services That Our Client Requires</h1>
+                        <h1 className="display-5 mb-4 text-center">Offer Tailor Made Services That Our Client Requires</h1>
                         <p className="mb-0">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat deleniti amet at atque sequi quibusdam
-                            cumque itaque repudiandae temporibus, eius nam mollitia voluptas maxime veniam necessitatibus saepe in ab?
-                            Repellat!
+                            Our dedicated team takes the time to understand your goals, offering customized packages, flexible scheduling, and hands-on support throughout the entire process. With years of expertise and a client-first approach, we turn your travel dreams into reality with precision and care.
                         </p>
                     </div>
                     <div className="row g-4 justify-content-center text-center">
                         {[
-                            { icon: "fa-ticket-alt", title: "Ticketing" },
-                            { icon: "fa-window-restore", title: "Visa Assistance" },
-                            { icon: "fa-dollar-sign", title: "Cost-Effective" },
-                            { icon: "fa-atlas", title: "Faster Processing" },
+                            { icon: "fa-ticket-alt", title: "Ticketing", description: "Seamless flight booking services for domestic and international destinations" },
+                            { icon: "fa-window-restore", title: "Visa Assistance", description: "Complete support for visa applications with expert documentation guidance" },
+                            { icon: "fa-dollar-sign", title: "Cost-Effective", description: "Competitive pricing with transparent fees and no hidden charges" },
+                            { icon: "fa-atlas", title: "Faster Processing", description: "Quick turnaround times ensuring your travel plans stay on track" },
                         ].map((f, idx) => (
                             <div className="col-md-6 col-lg-6 col-xl-3 wow fadeInUp" data-wow-delay={`${0.1 + idx * 0.2}s`} key={f.title}>
                                 <div className="feature-item text-center p-4">
@@ -549,7 +664,7 @@ export default function Site() {
                                     </div>
                                     <div className="feature-content d-flex flex-column">
                                         <h5 className="mb-3">{f.title}</h5>
-                                        <p className="mb-3">Dolor, sit amet consectetur adipisicing elit. Soluta inventore cum accusamus,</p>
+                                        <p className="mb-3">{f.description}</p>
                                         <a className="btn btn-secondary rounded-pill" href="#">
                                             Read More<i className="fas fa-arrow-right ms-2"></i>
                                         </a>
@@ -576,9 +691,7 @@ export default function Site() {
                         </div>
                         <h1 className="display-5 mb-4">Immigration & visa services following Countries</h1>
                         <p className="mb-0">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat deleniti amet at atque sequi quibusdam
-                            cumque itaque repudiandae temporibus, eius nam mollitia voluptas maxime veniam necessitatibus saepe in ab?
-                            Repellat!
+                            With established connections and deep knowledge of immigration policies for countries including Saudi Arabia, UAE, Oman, Qatar, Japan, China, the USA, and Italy, we ensure your application process is smooth, compliant, and successful, opening doors to your international journey with confidence.
                         </p>
                     </div>
 
@@ -629,39 +742,66 @@ export default function Site() {
                         </div>
                         <h1 className="display-5 mb-4">What Our Clients Say</h1>
                         <p className="mb-0">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat deleniti amet at atque sequi quibusdam
-                            cumque itaque repudiandae temporibus, eius nam mollitia voluptas maxime veniam necessitatibus saepe in ab?
-                            Repellat!
+                            Don't just take our word for it—hear directly from our satisfied clients who have experienced seamless visa processing, reliable ticketing services, and personalized support that turned their travel dreams into reality with RS Tours & Travels.
                         </p>
                     </div>
 
                     <div className="owl-carousel testimonial-carousel wow zoomInDown" data-wow-delay="0.2s">
-                        {[1, 2, 3].map((n) => (
-                            <div className="testimonial-item" key={n}>
-                                <div className="testimonial-content p-4 mb-5">
-                                    <p className="fs-5 mb-0">
-                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
-                                        et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitati eiusmod tempor incididunt.
-                                    </p>
-                                    <div className="d-flex justify-content-end">
-                                        <i className="fas fa-star text-secondary"></i>
-                                        <i className="fas fa-star text-secondary"></i>
-                                        <i className="fas fa-star text-secondary"></i>
-                                        <i className="fas fa-star text-secondary"></i>
-                                        <i className="fas fa-star text-secondary"></i>
+                        {clientReviews.length > 0 ? (
+                            clientReviews.map((review) => (
+                                <div className="testimonial-item" key={review._id}>
+                                    <div className="testimonial-content p-4 mb-5">
+                                        <p className="fs-5 mb-0">
+                                            {review.review_message}
+                                        </p>
+                                        <div className="d-flex justify-content-end">
+                                            {[...Array(5)].map((_, index) => (
+                                                <i
+                                                    key={index}
+                                                    className={`fas fa-star ${index < review.given_star ? 'text-secondary' : 'text-muted'}`}
+                                                ></i>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="d-flex">
+                                        <div className="rounded-circle me-4" style={{ width: 100, height: 100 }}>
+                                            <img className="img-fluid rounded-circle" src={review.reviewer_image} alt={review.reviewer_name} />
+                                        </div>
+                                        <div className="my-auto">
+                                            <h5>{review.reviewer_name}</h5>
+                                            <p className="mb-0">{review.reviewer_profession}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="d-flex">
-                                    <div className="rounded-circle me-4" style={{ width: 100, height: 100 }}>
-                                        <img className="img-fluid rounded-circle" src={`/img/testimonial-${n}.jpg`} alt="img" />
+                            ))
+                        ) : (
+                            [1, 2, 3].map((n) => (
+                                <div className="testimonial-item" key={n}>
+                                    <div className="testimonial-content p-4 mb-5">
+                                        <p className="fs-5 mb-0">
+                                            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+                                            et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitati eiusmod tempor incididunt.
+                                        </p>
+                                        <div className="d-flex justify-content-end">
+                                            <i className="fas fa-star text-secondary"></i>
+                                            <i className="fas fa-star text-secondary"></i>
+                                            <i className="fas fa-star text-secondary"></i>
+                                            <i className="fas fa-star text-secondary"></i>
+                                            <i className="fas fa-star text-secondary"></i>
+                                        </div>
                                     </div>
-                                    <div className="my-auto">
-                                        <h5>Person Name</h5>
-                                        <p className="mb-0">Profession</p>
+                                    <div className="d-flex">
+                                        <div className="rounded-circle me-4" style={{ width: 100, height: 100 }}>
+                                            <img className="img-fluid rounded-circle" src={`/img/testimonial-${n}.jpg`} alt="img" />
+                                        </div>
+                                        <div className="my-auto">
+                                            <h5>Person Name</h5>
+                                            <p className="mb-0">Profession</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

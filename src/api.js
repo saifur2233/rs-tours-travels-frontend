@@ -1,6 +1,7 @@
 import axios from "axios";
 
-export const API_BASE = import.meta.env.VITE_API_BASE || "https://rs-tours-travels-server.vercel.app";
+// export const API_BASE = import.meta.env.VITE_API_BASE || "https://rs-tours-travels-server.vercel.app";
+export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
 
 const api = axios.create({
     baseURL: `${API_BASE}/api`,
@@ -18,7 +19,10 @@ export const verifyToken = (token) =>
 
 // ---- HERO BANNER ----
 export const fetchHeroBanner = () => api.get("/hero-banner/latest").then(r => r.data);
+export const fetchAllHeroBanners = () => api.get("/hero-banner").then(r => r.data);
 export const createHeroBanner = (payload) => api.post("/hero-banner", payload).then(r => r.data);
+export const updateHeroBanner = (id, payload) => api.put(`/hero-banner/${id}`, payload).then(r => r.data);
+export const deleteHeroBanner = (id) => api.delete(`/hero-banner/${id}`).then(r => r.data);
 
 // ---- LOGO ----
 export const fetchLogo = () => api.get("/logo/latest").then(r => r.data);
@@ -39,3 +43,27 @@ export const createAddress = (payload) => api.post("/address", payload).then(r =
 // ---- SOCIAL LINKS ----
 export const fetchSocial = () => api.get("/social-links/latest").then(r => r.data);
 export const createSocial = (payload) => api.post("/social-links", payload).then(r => r.data);
+
+// ---- SERVICES ----
+export const fetchAllServices = () => api.get("/services").then(r => r.data);
+export const fetchService = (id) => api.get(`/services/${id}`).then(r => r.data);
+export const createService = (payload) => api.post("/services", payload).then(r => r.data);
+export const updateService = (id, payload) => api.put(`/services/${id}`, payload).then(r => r.data);
+export const deleteService = (id) => api.delete(`/services/${id}`).then(r => r.data);
+
+// ---- CLIENT REVIEWS ----
+export const fetchAllClientReviews = () => api.get("/client-reviews").then(r => r.data);
+export const fetchClientReview = (id) => api.get(`/client-reviews/${id}`).then(r => r.data);
+export const createClientReview = (payload) => api.post("/client-reviews", payload).then(r => r.data);
+export const updateClientReview = (id, payload) => api.put(`/client-reviews/${id}`, payload).then(r => r.data);
+export const deleteClientReview = (id) => api.delete(`/client-reviews/${id}`).then(r => r.data);
+
+// ---- PROFILE ----
+export const getProfile = (token) =>
+    api.get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+export const updateProfile = (token, payload) =>
+    api.put("/auth/profile", payload, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+export const changePassword = (token, payload) =>
+    api.put("/auth/change-password", payload, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);

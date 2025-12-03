@@ -7,20 +7,164 @@ import {
     createEmail,
     createAddress,
     createSocial,
+    fetchHeroBanner,
+    fetchAllHeroBanners,
+    updateHeroBanner,
+    deleteHeroBanner,
+    fetchHotline,
+    fetchLogo,
+    fetchEmail,
+    fetchAddress,
+    fetchSocial,
+    fetchAllServices,
+    createService,
+    updateService,
+    deleteService,
+    fetchAllClientReviews,
+    createClientReview,
+    updateClientReview,
+    deleteClientReview,
+    getProfile,
+    updateProfile,
+    changePassword,
 } from "../api";
 import FilePicker from "../components/FilePicker.jsx";
-import { isLoggedIn, removeToken } from "../auth";
+import Sidebar from "../components/Sidebar.jsx";
+import Topbar from "../components/Topbar.jsx";
+import ProfileModal from "../components/ProfileModal.jsx";
+import { isLoggedIn, removeToken, getToken } from "../auth";
+import "./Admin.css";
 
 export default function Admin() {
     const navigate = useNavigate();
+    const [activeSection, setActiveSection] = useState("hero");
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [userData, setUserData] = useState({ name: "", email: "" });
 
     useEffect(() => {
-        if (!isLoggedIn()) navigate("/login");
+        if (!isLoggedIn()) {
+            navigate("/login");
+        } else {
+            fetchUserProfile();
+            fetchAllData();
+        }
     }, []);
+
+    const fetchUserProfile = async () => {
+        try {
+            const token = getToken();
+            const response = await getProfile(token);
+            setUserData(response.data || { name: "Admin User", email: "admin@example.com" });
+        } catch (error) {
+            console.error("Failed to fetch profile:", error);
+            // Set default values if profile fetch fails
+            setUserData({ name: "Admin User", email: "admin@example.com" });
+        }
+    };
+
+    const fetchAllData = async () => {
+        try {
+            // Fetch All Hero Banners for the list
+            const allHeroData = await fetchAllHeroBanners();
+            console.log("allHeroData: ", allHeroData);
+
+            if (allHeroData?.data) {
+                setHeroBanners(allHeroData.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch hero banners:", error);
+        }
+
+        try {
+            // Fetch All Services
+            const servicesData = await fetchAllServices();
+            if (servicesData?.data) {
+                setServices(servicesData.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch services:", error);
+        }
+
+        try {
+            // Fetch All Client Reviews
+            const reviewsData = await fetchAllClientReviews();
+            if (reviewsData?.data) {
+                setReviews(reviewsData.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch client reviews:", error);
+        }
+
+        try {
+            // Fetch Logo
+            const logoData = await fetchLogo();
+            if (logoData?.data?.imageBase64) {
+                setLogoBase64(logoData.data.imageBase64);
+            }
+        } catch (error) {
+            console.error("Failed to fetch logo:", error);
+        }
+
+        try {
+            // Fetch Hotline
+            const hotlineData = await fetchHotline();
+            if (hotlineData?.data?.number) {
+                setHotline(hotlineData.data.number);
+            }
+        } catch (error) {
+            console.error("Failed to fetch hotline:", error);
+        }
+
+        try {
+            // Fetch Email
+            const emailData = await fetchEmail();
+            if (emailData?.data?.email) {
+                setEmail(emailData.data.email);
+            }
+        } catch (error) {
+            console.error("Failed to fetch email:", error);
+        }
+
+        try {
+            // Fetch Address
+            const addressData = await fetchAddress();
+            if (addressData?.data?.text) {
+                setAddress(addressData.data.text);
+            }
+        } catch (error) {
+            console.error("Failed to fetch address:", error);
+        }
+
+        try {
+            // Fetch Social Links
+            const socialData = await fetchSocial();
+            if (socialData?.data) {
+                setSocial({
+                    facebook: socialData.data.facebook || "",
+                    twitter: socialData.data.twitter || "",
+                    instagram: socialData.data.instagram || "",
+                    linkedin: socialData.data.linkedin || "",
+                });
+            }
+        } catch (error) {
+            console.error("Failed to fetch social links:", error);
+        }
+    };
 
     const handleLogout = () => {
         removeToken();
         navigate("/");
+    };
+
+    const handleProfileSave = async ({ type, data }) => {
+        const token = getToken();
+        if (type === "profile") {
+            await updateProfile(token, data);
+            setUserData(data);
+        } else if (type === "password") {
+            await changePassword(token, data);
+        }
     };
 
     // Hero Banner
@@ -32,6 +176,30 @@ export default function Admin() {
         btnLabel: "",
         btnHref: "#",
     });
+    const [heroBanners, setHeroBanners] = useState([]);
+    const [editingHeroBannerId, setEditingHeroBannerId] = useState(null);
+
+    // Services
+    const [service, setService] = useState({
+        service_img_base64: "",
+        service_extra_img_base64: "",
+        service_name: "",
+        service_short_desc: "",
+        service_desc: ""
+    });
+    const [services, setServices] = useState([]);
+    const [editingServiceId, setEditingServiceId] = useState(null);
+
+    // Client Reviews
+    const [review, setReview] = useState({
+        reviewer_image_base64: "",
+        reviewer_name: "",
+        reviewer_profession: "",
+        review_message: "",
+        given_star: 5
+    });
+    const [reviews, setReviews] = useState([]);
+    const [editingReviewId, setEditingReviewId] = useState(null);
 
     // Logo
     const [logoBase64, setLogoBase64] = useState("");
@@ -46,182 +214,1003 @@ export default function Admin() {
 
     const saveHero = async (e) => {
         e.preventDefault();
-        setMsg("Saving hero...");
+
+        if (editingHeroBannerId) {
+            // Update existing hero banner
+            setMsg("Updating hero banner...");
+            try {
+                await updateHeroBanner(editingHeroBannerId, hb);
+                setMsg(`Hero Banner updated successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+
+                // Reset form and refresh list
+                resetHeroForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to update Hero Banner ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        } else {
+            // Create new hero banner
+            setMsg("Creating hero banner...");
+            try {
+                await createHeroBanner(hb);
+                setMsg(`Hero Banner created successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+
+                // Reset form and refresh list
+                resetHeroForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to create Hero Banner ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        }
+    };
+
+    const resetHeroForm = () => {
+        setHb({
+            imageBase64: "",
+            topSubtitle: "",
+            title: "",
+            subtitle: "",
+            btnLabel: "",
+            btnHref: "#",
+        });
+        setEditingHeroBannerId(null);
+    };
+
+    const handleEditHeroBanner = (banner) => {
+        setHb({
+            imageBase64: banner.imageBase64 || "",
+            topSubtitle: banner.topSubtitle || "",
+            title: banner.title || "",
+            subtitle: banner.subtitle || "",
+            btnLabel: banner.btnLabel || "",
+            btnHref: banner.btnHref || "#",
+        });
+        setEditingHeroBannerId(banner._id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteHeroBanner = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this hero banner?")) {
+            return;
+        }
+
+        setMsg("Deleting hero banner...");
         try {
-            const res = await createHeroBanner(hb);
-            setMsg(`Hero saved ✅ (id: ${res?.data?._id || ""})`);
+            await deleteHeroBanner(id);
+            setMsg(`Hero Banner deleted successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
+
+            // Reset form if we were editing this banner
+            if (editingHeroBannerId === id) {
+                resetHeroForm();
+            }
+
+            // Refresh list
+            fetchAllData();
         } catch (err) {
-            setMsg("Hero save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to delete Hero Banner ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
         }
     };
 
     const saveLogo = async (e) => {
         e.preventDefault();
-        setMsg("Saving logo...");
+        setMsg("Updating logo...");
         try {
             const res = await createLogo({ imageBase64: logoBase64 });
-            setMsg(`Logo saved ✅ (id: ${res?.data?._id || ""})`);
+            setMsg(`Logo updated successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
         } catch (err) {
-            setMsg("Logo save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to update Logo ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
         }
     };
 
     const saveHotline = async (e) => {
         e.preventDefault();
-        setMsg("Saving hotline...");
+        setMsg("Updating hotline...");
         try {
             const res = await createHotline({ number: hotline });
-            setMsg(`Hotline saved ✅ (id: ${res?.data?._id || ""})`);
+            setMsg(`Hotline updated successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
         } catch (err) {
-            setMsg("Hotline save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to update Hotline ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
         }
     };
 
     const saveEmail = async (e) => {
         e.preventDefault();
-        setMsg("Saving email...");
+        setMsg("Updating email...");
         try {
             const res = await createEmail({ email });
-            setMsg(`Email saved ✅ (id: ${res?.data?._id || ""})`);
+            setMsg(`Email updated successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
         } catch (err) {
-            setMsg("Email save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to update Email ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
         }
     };
 
     const saveAddress = async (e) => {
         e.preventDefault();
-        setMsg("Saving address...");
+        setMsg("Updating address...");
         try {
             const res = await createAddress({ text: address });
-            setMsg(`Address saved ✅ (id: ${res?.data?._id || ""})`);
+            setMsg(`Address updated successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
         } catch (err) {
-            setMsg("Address save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to update Address ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
         }
     };
 
     const saveSocial = async (e) => {
         e.preventDefault();
-        setMsg("Saving social links...");
+        setMsg("Updating social links...");
         try {
             const res = await createSocial(social);
-            setMsg(`Social links saved ✅ (id: ${res?.data?._id || ""})`);
+            setMsg(`Social Links updated successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
         } catch (err) {
-            setMsg("Social save failed ❌ " + (err?.response?.data?.message || err.message));
+            setMsg("Failed to update Social Links ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
+        }
+    };
+
+    // Service Functions
+    const saveService = async (e) => {
+        e.preventDefault();
+
+        if (editingServiceId) {
+            setMsg("Updating service...");
+            try {
+                await updateService(editingServiceId, service);
+                setMsg(`Service updated successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+                resetServiceForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to update Service ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        } else {
+            setMsg("Creating service...");
+            try {
+                await createService(service);
+                setMsg(`Service created successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+                resetServiceForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to create Service ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        }
+    };
+
+    const resetServiceForm = () => {
+        setService({
+            service_img_base64: "",
+            service_extra_img_base64: "",
+            service_name: "",
+            service_short_desc: "",
+            service_desc: ""
+        });
+        setEditingServiceId(null);
+    };
+
+    const handleEditService = (svc) => {
+        setService({
+            service_img_base64: svc.service_img || "",
+            service_extra_img_base64: svc.service_extra_img || "",
+            service_name: svc.service_name || "",
+            service_short_desc: svc.service_short_desc || "",
+            service_desc: svc.service_desc || ""
+        });
+        setEditingServiceId(svc._id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteService = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this service?")) {
+            return;
+        }
+
+        setMsg("Deleting service...");
+        try {
+            await deleteService(id);
+            setMsg(`Service deleted successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
+
+            if (editingServiceId === id) {
+                resetServiceForm();
+            }
+
+            fetchAllData();
+        } catch (err) {
+            setMsg("Failed to delete Service ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
+        }
+    };
+
+    // Client Review Functions
+    const saveReview = async (e) => {
+        e.preventDefault();
+
+        if (editingReviewId) {
+            setMsg("Updating review...");
+            try {
+                await updateClientReview(editingReviewId, {
+                    review_message: review.review_message,
+                    given_star: review.given_star,
+                    reviewer_name: review.reviewer_name,
+                    reviewer_profession: review.reviewer_profession,
+                    reviewer_image: review.reviewer_image_base64
+                });
+                setMsg(`Client Review updated successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+                resetReviewForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to update Client Review ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        } else {
+            setMsg("Creating review...");
+            try {
+                await createClientReview({
+                    review_message: review.review_message,
+                    given_star: review.given_star,
+                    reviewer_name: review.reviewer_name,
+                    reviewer_profession: review.reviewer_profession,
+                    reviewer_image: review.reviewer_image_base64
+                });
+                setMsg(`Client Review created successfully ✅`);
+                setTimeout(() => setMsg(""), 3000);
+                resetReviewForm();
+                fetchAllData();
+            } catch (err) {
+                setMsg("Failed to create Client Review ❌ " + (err?.response?.data?.message || err.message));
+                setTimeout(() => setMsg(""), 5000);
+            }
+        }
+    };
+
+    const resetReviewForm = () => {
+        setReview({
+            reviewer_image_base64: "",
+            reviewer_name: "",
+            reviewer_profession: "",
+            review_message: "",
+            given_star: 5
+        });
+        setEditingReviewId(null);
+    };
+
+    const handleEditReview = (rev) => {
+        setReview({
+            reviewer_image_base64: rev.reviewer_image || "",
+            reviewer_name: rev.reviewer_name || "",
+            reviewer_profession: rev.reviewer_profession || "",
+            review_message: rev.review_message || "",
+            given_star: rev.given_star || 5
+        });
+        setEditingReviewId(rev._id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteReview = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this review?")) {
+            return;
+        }
+
+        setMsg("Deleting review...");
+        try {
+            await deleteClientReview(id);
+            setMsg(`Client Review deleted successfully ✅`);
+            setTimeout(() => setMsg(""), 3000);
+
+            if (editingReviewId === id) {
+                resetReviewForm();
+            }
+
+            fetchAllData();
+        } catch (err) {
+            setMsg("Failed to delete Client Review ❌ " + (err?.response?.data?.message || err.message));
+            setTimeout(() => setMsg(""), 5000);
+        }
+    };
+
+    const renderSection = () => {
+        switch (activeSection) {
+            case "hero":
+                return (
+                    <>
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">
+                                    🎨 {editingHeroBannerId ? 'Edit Hero Banner' : 'Create New Hero Banner'}
+                                </h2>
+                            </div>
+                            <form onSubmit={saveHero}>
+                                <div className="form-group">
+                                    <FilePicker
+                                        label="Banner Image"
+                                        onBase64={(b64) => setHb({ ...hb, imageBase64: b64 })}
+                                        required={!editingHeroBannerId}
+                                    />
+                                    {editingHeroBannerId && hb.imageBase64 && (
+                                        <img
+                                            src={hb.imageBase64}
+                                            alt="Current banner"
+                                            style={{
+                                                width: '200px',
+                                                height: '120px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                marginTop: '10px'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Top Subtitle</label>
+                                    <input
+                                        className="form-control"
+                                        value={hb.topSubtitle}
+                                        onChange={(e) => setHb({ ...hb, topSubtitle: e.target.value })}
+                                        placeholder="e.g., WELCOME TO RS TOURS"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Title</label>
+                                    <input
+                                        className="form-control"
+                                        value={hb.title}
+                                        onChange={(e) => setHb({ ...hb, title: e.target.value })}
+                                        placeholder="e.g., Explore The World"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Subtitle</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="3"
+                                        value={hb.subtitle}
+                                        onChange={(e) => setHb({ ...hb, subtitle: e.target.value })}
+                                        placeholder="Enter a short description..."
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Button Label</label>
+                                    <input
+                                        className="form-control"
+                                        value={hb.btnLabel}
+                                        onChange={(e) => setHb({ ...hb, btnLabel: e.target.value })}
+                                        placeholder="e.g., Book Now"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Button Link</label>
+                                    <input
+                                        className="form-control"
+                                        value={hb.btnHref}
+                                        onChange={(e) => setHb({ ...hb, btnHref: e.target.value })}
+                                        placeholder="e.g., #booking"
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button type="submit" className="btn btn-primary">
+                                        {editingHeroBannerId ? 'Update Hero Banner' : 'Create Hero Banner'}
+                                    </button>
+                                    {editingHeroBannerId && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={resetHeroForm}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">📋 All Hero Banners</h2>
+                            </div>
+                            {heroBanners.length == 0 ? (
+                                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
+                                    No hero banners found. Create one to get started!
+                                </p>
+                            ) : (
+                                <div className="table-responsive">
+                                    <table className="hero-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Image</th>
+                                                <th>Top Subtitle</th>
+                                                <th>Title</th>
+                                                <th>Subtitle</th>
+                                                <th>Button</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {heroBanners.map((banner) => (
+                                                <tr key={banner._id}>
+                                                    <td>
+                                                        {banner.imageBase64 && (
+                                                            <img
+                                                                src={banner.imageBase64}
+                                                                alt="Hero"
+                                                                style={{
+                                                                    width: '80px',
+                                                                    height: '50px',
+                                                                    objectFit: 'cover',
+                                                                    borderRadius: '5px'
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td>{banner.topSubtitle || '-'}</td>
+                                                    <td>{banner.title || '-'}</td>
+                                                    <td>
+                                                        {banner.subtitle
+                                                            ? banner.subtitle.substring(0, 50) + (banner.subtitle.length > 50 ? '...' : '')
+                                                            : '-'}
+                                                    </td>
+                                                    <td>
+                                                        {banner.btnLabel || '-'}
+                                                        {banner.btnHref && banner.btnHref !== '#' && (
+                                                            <small style={{ display: 'block', color: '#7f8c8d' }}>
+                                                                ({banner.btnHref})
+                                                            </small>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                                            <button
+                                                                className="btn-action btn-edit"
+                                                                onClick={() => handleEditHeroBanner(banner)}
+                                                                title="Edit"
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn-action btn-delete"
+                                                                onClick={() => handleDeleteHeroBanner(banner._id)}
+                                                                title="Delete"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                );
+
+            case "services":
+                return (
+                    <>
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">
+                                    🛠️ {editingServiceId ? 'Edit Service' : 'Create New Service'}
+                                </h2>
+                            </div>
+                            <form onSubmit={saveService}>
+                                <div className="form-group">
+                                    <FilePicker
+                                        label="Service Image (500x400 recommended)"
+                                        onBase64={(b64) => setService({ ...service, service_img_base64: b64 })}
+                                        required={!editingServiceId}
+                                    />
+                                    {editingServiceId && service.service_img_base64 && (
+                                        <img
+                                            src={service.service_img_base64}
+                                            alt="Current service"
+                                            style={{
+                                                width: '200px',
+                                                height: '160px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                marginTop: '10px'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <FilePicker
+                                        label="Service Extra Image (Optional)"
+                                        onBase64={(b64) => setService({ ...service, service_extra_img_base64: b64 })}
+                                    />
+                                    {service.service_extra_img_base64 && (
+                                        <img
+                                            src={service.service_extra_img_base64}
+                                            alt="Extra service"
+                                            style={{
+                                                width: '200px',
+                                                height: '160px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                marginTop: '10px'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Service Name *</label>
+                                    <input
+                                        className="form-control"
+                                        value={service.service_name}
+                                        onChange={(e) => setService({ ...service, service_name: e.target.value })}
+                                        placeholder="e.g., Flight Booking"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Short Description *</label>
+                                    <input
+                                        className="form-control"
+                                        value={service.service_short_desc}
+                                        onChange={(e) => setService({ ...service, service_short_desc: e.target.value })}
+                                        placeholder="Brief description in one line"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Full Description *</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="5"
+                                        value={service.service_desc}
+                                        onChange={(e) => setService({ ...service, service_desc: e.target.value })}
+                                        placeholder="Enter detailed service description..."
+                                        required
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button type="submit" className="btn btn-primary">
+                                        {editingServiceId ? 'Update Service' : 'Create Service'}
+                                    </button>
+                                    {editingServiceId && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={resetServiceForm}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">📋 All Services</h2>
+                            </div>
+                            {services.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
+                                    No services found. Create one to get started!
+                                </p>
+                            ) : (
+                                <div className="table-responsive">
+                                    <table className="hero-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Image</th>
+                                                <th>Service Name</th>
+                                                <th>Short Description</th>
+                                                <th>Description</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {services.map((svc) => (
+                                                <tr key={svc._id}>
+                                                    <td>
+                                                        {svc.service_img && (
+                                                            <img
+                                                                src={svc.service_img}
+                                                                alt="Service"
+                                                                style={{
+                                                                    width: '80px',
+                                                                    height: '64px',
+                                                                    objectFit: 'cover',
+                                                                    borderRadius: '5px'
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td>{svc.service_name || '-'}</td>
+                                                    <td>
+                                                        {svc.service_short_desc
+                                                            ? svc.service_short_desc.substring(0, 50) + (svc.service_short_desc.length > 50 ? '...' : '')
+                                                            : '-'}
+                                                    </td>
+                                                    <td>
+                                                        {svc.service_desc
+                                                            ? svc.service_desc.substring(0, 60) + (svc.service_desc.length > 60 ? '...' : '')
+                                                            : '-'}
+                                                    </td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                                            <button
+                                                                className="btn-action btn-edit"
+                                                                onClick={() => handleEditService(svc)}
+                                                                title="Edit"
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn-action btn-delete"
+                                                                onClick={() => handleDeleteService(svc._id)}
+                                                                title="Delete"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                );
+
+            case "reviews":
+                return (
+                    <>
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">
+                                    ⭐ {editingReviewId ? 'Edit Client Review' : 'Add New Client Review'}
+                                </h2>
+                            </div>
+                            <form onSubmit={saveReview}>
+                                <div className="form-group">
+                                    <FilePicker
+                                        label="Reviewer Image (100x100)"
+                                        onBase64={(b64) => setReview({ ...review, reviewer_image_base64: b64 })}
+                                        required={!editingReviewId}
+                                    />
+                                    {editingReviewId && review.reviewer_image_base64 && (
+                                        <img
+                                            src={review.reviewer_image_base64}
+                                            alt="Current reviewer"
+                                            style={{
+                                                width: '100px',
+                                                height: '100px',
+                                                objectFit: 'cover',
+                                                borderRadius: '50%',
+                                                marginTop: '10px'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Reviewer Name *</label>
+                                    <input
+                                        className="form-control"
+                                        value={review.reviewer_name}
+                                        onChange={(e) => setReview({ ...review, reviewer_name: e.target.value })}
+                                        placeholder="e.g., John Doe"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Reviewer Profession *</label>
+                                    <input
+                                        className="form-control"
+                                        value={review.reviewer_profession}
+                                        onChange={(e) => setReview({ ...review, reviewer_profession: e.target.value })}
+                                        placeholder="e.g., Business Owner"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Rating (Stars) *</label>
+                                    <select
+                                        className="form-control"
+                                        value={review.given_star}
+                                        onChange={(e) => setReview({ ...review, given_star: parseInt(e.target.value) })}
+                                        required
+                                    >
+                                        <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                                        <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
+                                        <option value={3}>⭐⭐⭐ (3 Stars)</option>
+                                        <option value={2}>⭐⭐ (2 Stars)</option>
+                                        <option value={1}>⭐ (1 Star)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Review Message *</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="5"
+                                        value={review.review_message}
+                                        onChange={(e) => setReview({ ...review, review_message: e.target.value })}
+                                        placeholder="Enter the client's review message..."
+                                        required
+                                    ></textarea>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button type="submit" className="btn btn-primary">
+                                        {editingReviewId ? 'Update Review' : 'Create Review'}
+                                    </button>
+                                    {editingReviewId && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={resetReviewForm}
+                                        >
+                                            Cancel Edit
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="dashboard-section">
+                            <div className="section-header">
+                                <h2 className="section-title">All Client Reviews</h2>
+                            </div>
+                            {reviews.length === 0 ? (
+                                <div className="empty-state">
+                                    <p>No client reviews found. Create your first review above!</p>
+                                </div>
+                            ) : (
+                                <div className="table-responsive">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Image</th>
+                                                <th>Name</th>
+                                                <th>Profession</th>
+                                                <th>Rating</th>
+                                                <th>Review Message</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {reviews.map((rev) => (
+                                                <tr key={rev._id}>
+                                                    <td>
+                                                        {rev.reviewer_image && (
+                                                            <img
+                                                                src={rev.reviewer_image}
+                                                                alt="Reviewer"
+                                                                style={{
+                                                                    width: '60px',
+                                                                    height: '60px',
+                                                                    objectFit: 'cover',
+                                                                    borderRadius: '50%'
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td>{rev.reviewer_name || '-'}</td>
+                                                    <td>{rev.reviewer_profession || '-'}</td>
+                                                    <td>
+                                                        {'⭐'.repeat(rev.given_star || 5)}
+                                                    </td>
+                                                    <td>
+                                                        {rev.review_message
+                                                            ? rev.review_message.substring(0, 80) + (rev.review_message.length > 80 ? '...' : '')
+                                                            : '-'}
+                                                    </td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                                            <button
+                                                                className="btn-action btn-edit"
+                                                                onClick={() => handleEditReview(rev)}
+                                                                title="Edit"
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn-action btn-delete"
+                                                                onClick={() => handleDeleteReview(rev._id)}
+                                                                title="Delete"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                );
+
+            case "logo":
+                return (
+                    <div className="dashboard-section">
+                        <div className="section-header">
+                            <h2 className="section-title">🖼️ Website Logo</h2>
+                        </div>
+                        <form onSubmit={saveLogo}>
+                            <div className="form-group">
+                                <FilePicker label="Logo Image" onBase64={setLogoBase64} required />
+                            </div>
+                            <button className="btn btn-primary">Update Logo</button>
+                        </form>
+                    </div>
+                );
+
+            case "hotline":
+                return (
+                    <div className="dashboard-section">
+                        <div className="section-header">
+                            <h2 className="section-title">📞 Hotline Number</h2>
+                        </div>
+                        <form onSubmit={saveHotline}>
+                            <div className="form-group">
+                                <label className="form-label">Phone Number</label>
+                                <input
+                                    className="form-control"
+                                    // placeholder="09617-616263"
+                                    value={hotline}
+                                    onChange={(e) => setHotline(e.target.value)}
+                                />
+                            </div>
+                            <button className="btn btn-primary">Update Hotline</button>
+                        </form>
+                    </div>
+                );
+
+            case "email":
+                return (
+                    <div className="dashboard-section">
+                        <div className="section-header">
+                            <h2 className="section-title">📧 Email Address</h2>
+                        </div>
+                        <form onSubmit={saveEmail}>
+                            <div className="form-group">
+                                <label className="form-label">Contact Email</label>
+                                <input
+                                    className="form-control"
+                                    placeholder="info@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    type="email"
+                                />
+                            </div>
+                            <button className="btn btn-primary">Update Email</button>
+                        </form>
+                    </div>
+                );
+
+            case "address":
+                return (
+                    <div className="dashboard-section">
+                        <div className="section-header">
+                            <h2 className="section-title">📍 Business Address</h2>
+                        </div>
+                        <form onSubmit={saveAddress}>
+                            <div className="form-group">
+                                <label className="form-label">Address</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    placeholder="Your business address..."
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                />
+                            </div>
+                            <button className="btn btn-primary">Update Address</button>
+                        </form>
+                    </div>
+                );
+
+            case "social":
+                return (
+                    <div className="dashboard-section">
+                        <div className="section-header">
+                            <h2 className="section-title">🔗 Social Media Links</h2>
+                        </div>
+                        <form onSubmit={saveSocial}>
+                            <div className="form-group">
+                                <label className="form-label">Facebook URL</label>
+                                <input
+                                    className="form-control"
+                                    placeholder="https://facebook.com/yourpage"
+                                    value={social.facebook}
+                                    onChange={(e) => setSocial({ ...social, facebook: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Twitter URL</label>
+                                <input
+                                    className="form-control"
+                                    placeholder="https://twitter.com/yourhandle"
+                                    value={social.twitter}
+                                    onChange={(e) => setSocial({ ...social, twitter: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Instagram URL</label>
+                                <input
+                                    className="form-control"
+                                    placeholder="https://instagram.com/yourprofile"
+                                    value={social.instagram}
+                                    onChange={(e) => setSocial({ ...social, instagram: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">LinkedIn URL</label>
+                                <input
+                                    className="form-control"
+                                    placeholder="https://linkedin.com/company/yourcompany"
+                                    value={social.linkedin}
+                                    onChange={(e) => setSocial({ ...social, linkedin: e.target.value })}
+                                />
+                            </div>
+                            <button className="btn btn-primary">Update Social Links</button>
+                        </form>
+                    </div>
+                );
+
+            default:
+                return null;
         }
     };
 
     return (
-        <div className="container py-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2>Admin Panel</h2>
-                <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
-            </div>
-            {msg && <div className="alert alert-info">{msg}</div>}
+        <div className="admin-dashboard">
+            <Sidebar
+                activeSection={activeSection}
+                onSectionChange={setActiveSection}
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+            />
 
-            <div className="row g-4">
+            <main className="admin-main">
+                <Topbar
+                    userName={userData.name}
+                    onLogout={handleLogout}
+                    onProfileClick={() => setProfileModalOpen(true)}
+                    onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+                />
 
-                {/* Hero Banner */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Hero Banner</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveHero}>
-                                <FilePicker label="Banner Image" onBase64={(b64) => setHb({ ...hb, imageBase64: b64 })} required />
-                                <div className="mb-3">
-                                    <label className="form-label">Top Subtitle</label>
-                                    <input className="form-control" value={hb.topSubtitle} onChange={(e) => setHb({ ...hb, topSubtitle: e.target.value })} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Title</label>
-                                    <input className="form-control" value={hb.title} onChange={(e) => setHb({ ...hb, title: e.target.value })} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Subtitle</label>
-                                    <textarea className="form-control" rows="2" value={hb.subtitle} onChange={(e) => setHb({ ...hb, subtitle: e.target.value })} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Button Label</label>
-                                    <input className="form-control" value={hb.btnLabel} onChange={(e) => setHb({ ...hb, btnLabel: e.target.value })} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Button Link</label>
-                                    <input className="form-control" value={hb.btnHref} onChange={(e) => setHb({ ...hb, btnHref: e.target.value })} />
-                                </div>
-                                <button className="btn btn-primary">Save Hero</button>
-                            </form>
+                <div className="admin-content">
+                    {msg && (
+                        <div className={`alert-message ${msg.includes("✅") ? 'alert-success' : msg.includes("❌") ? 'alert-error' : 'alert-info'}`}>
+                            {msg}
                         </div>
-                    </div>
-                </div>
+                    )}
 
-                {/* Logo */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Website Logo</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveLogo}>
-                                <FilePicker label="Logo Image" onBase64={setLogoBase64} required />
-                                <button className="btn btn-primary">Save Logo</button>
-                            </form>
-                        </div>
-                    </div>
+                    {renderSection()}
                 </div>
+            </main>
 
-                {/* Hotline */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Hotline</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveHotline}>
-                                <input className="form-control mb-3" placeholder="09617-616263" value={hotline} onChange={(e) => setHotline(e.target.value)} />
-                                <button className="btn btn-primary">Save Hotline</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Email */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Email Address</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveEmail}>
-                                <input className="form-control mb-3" placeholder="info@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                                <button className="btn btn-primary">Save Email</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Address */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Address</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveAddress}>
-                                <textarea className="form-control mb-3" rows="3" placeholder="Your address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                                <button className="btn btn-primary">Save Address</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Social Links */}
-                <div className="col-lg-6">
-                    <div className="card">
-                        <div className="card-header"><strong>Social Links (optional)</strong></div>
-                        <div className="card-body">
-                            <form onSubmit={saveSocial}>
-                                <input className="form-control mb-2" placeholder="Facebook URL" value={social.facebook} onChange={(e) => setSocial({ ...social, facebook: e.target.value })} />
-                                <input className="form-control mb-2" placeholder="Twitter URL" value={social.twitter} onChange={(e) => setSocial({ ...social, twitter: e.target.value })} />
-                                <input className="form-control mb-2" placeholder="Instagram URL" value={social.instagram} onChange={(e) => setSocial({ ...social, instagram: e.target.value })} />
-                                <input className="form-control mb-2" placeholder="LinkedIn URL" value={social.linkedin} onChange={(e) => setSocial({ ...social, linkedin: e.target.value })} />
-                                <button className="btn btn-primary mt-2">Save Social Links</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+            <ProfileModal
+                isOpen={profileModalOpen}
+                onClose={() => setProfileModalOpen(false)}
+                userData={userData}
+                onSave={handleProfileSave}
+            />
         </div>
     );
 }
