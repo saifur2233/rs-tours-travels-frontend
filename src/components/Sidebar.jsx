@@ -11,7 +11,24 @@ const menuItems = [
     { id: "social", label: "Social Links", icon: "🔗" },
 ];
 
-export default function Sidebar({ activeSection, onSectionChange, isOpen, onClose }) {
+const accountMenuItems = [
+    { id: "profile", label: "View Profile", icon: "👤" },
+    { id: "admin-management", label: "Manage Admins", icon: "👥" },
+    { id: "logout", label: "Logout", icon: "🚪", isDanger: true },
+];
+
+export default function Sidebar({ activeSection, onSectionChange, isOpen, onClose, onLogout }) {
+    const handleMenuClick = (item) => {
+        if (item.id === "logout") {
+            // Handle logout
+            onLogout();
+        } else {
+            // Handle section change
+            onSectionChange(item.id);
+        }
+        onClose();
+    };
+
     return (
         <>
             {/* Sidebar Overlay for mobile */}
@@ -30,19 +47,33 @@ export default function Sidebar({ activeSection, onSectionChange, isOpen, onClos
                 </div>
 
                 <nav className="sidebar-menu">
-                    {menuItems.map((item) => (
-                        <div
-                            key={item.id}
-                            className={`menu-item ${activeSection === item.id ? 'active' : ''}`}
-                            onClick={() => {
-                                onSectionChange(item.id);
-                                onClose();
-                            }}
-                        >
-                            <span className="menu-icon">{item.icon}</span>
-                            <span>{item.label}</span>
-                        </div>
-                    ))}
+                    <div className="menu-section">
+                        <div className="menu-section-title">Management</div>
+                        {menuItems.map((item) => (
+                            <div
+                                key={item.id}
+                                className={`menu-item ${activeSection === item.id ? 'active' : ''}`}
+                                onClick={() => handleMenuClick(item)}
+                            >
+                                <span className="menu-icon">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="menu-section">
+                        <div className="menu-section-title">Account</div>
+                        {accountMenuItems.map((item) => (
+                            <div
+                                key={item.id}
+                                className={`menu-item ${activeSection === item.id ? 'active' : ''} ${item.isDanger ? 'danger' : ''}`}
+                                onClick={() => handleMenuClick(item)}
+                            >
+                                <span className="menu-icon">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
                 </nav>
             </aside>
         </>

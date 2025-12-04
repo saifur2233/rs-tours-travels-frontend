@@ -14,6 +14,12 @@ export default function Topbar({ userName, onLogout, onProfileClick, onMenuToggl
         return name.substring(0, 2).toUpperCase();
     };
 
+    // Toggle dropdown handler
+    const handleToggleDropdown = () => {
+        console.log("Dropdown toggled. Current state:", dropdownOpen);
+        setDropdownOpen(!dropdownOpen);
+    };
+
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -39,7 +45,8 @@ export default function Topbar({ userName, onLogout, onProfileClick, onMenuToggl
                 <div className={`profile-dropdown ${dropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
                     <button
                         className="profile-trigger"
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        onClick={handleToggleDropdown}
+                        type="button"
                     >
                         <div className="profile-avatar">
                             {getInitials(userName)}
@@ -55,9 +62,11 @@ export default function Topbar({ userName, onLogout, onProfileClick, onMenuToggl
                         <button
                             className="dropdown-item"
                             onClick={() => {
+                                console.log("View Profile clicked");
                                 setDropdownOpen(false);
                                 onProfileClick();
                             }}
+                            type="button"
                         >
                             <span>👤</span>
                             <span>View Profile</span>
@@ -66,9 +75,11 @@ export default function Topbar({ userName, onLogout, onProfileClick, onMenuToggl
                         <button
                             className="dropdown-item"
                             onClick={() => {
+                                console.log("Logout clicked");
                                 setDropdownOpen(false);
                                 onLogout();
                             }}
+                            type="button"
                         >
                             <span>🚪</span>
                             <span>Logout</span>

@@ -27,11 +27,16 @@ import {
     getProfile,
     updateProfile,
     changePassword,
+    getAllAdmins,
+    createAdmin,
+    updateAdmin,
+    deleteAdmin,
 } from "../api";
 import FilePicker from "../components/FilePicker.jsx";
 import Sidebar from "../components/Sidebar.jsx";
 import Topbar from "../components/Topbar.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
+import Toast from "../components/Toast.jsx";
 import { isLoggedIn, removeToken, getToken } from "../auth";
 import "./Admin.css";
 
@@ -41,6 +46,31 @@ export default function Admin() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [userData, setUserData] = useState({ name: "", email: "" });
+    const [toasts, setToasts] = useState([]);
+
+    // Profile edit states
+    const [profileForm, setProfileForm] = useState({ name: "", email: "" });
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    });
+    const [loading, setLoading] = useState(false);
+
+    // Admin management states
+    const [admins, setAdmins] = useState([]);
+    const [adminForm, setAdminForm] = useState({ username: "", email: "", password: "" });
+    const [editingAdminId, setEditingAdminId] = useState(null);
+
+    // Toast helper function
+    const showToast = (message, type = "info") => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+    };
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(toast => toast.id !== id));
+    };
 
     useEffect(() => {
         if (!isLoggedIn()) {
@@ -51,10 +81,18 @@ export default function Admin() {
         }
     }, []);
 
+    // Update profile form when userData changes
+    useEffect(() => {
+        setProfileForm({ name: userData.name, email: userData.email });
+    }, [userData]);
+
     const fetchUserProfile = async () => {
         try {
             const token = getToken();
+            console.log("Token:", token);
+            
             const response = await getProfile(token);
+            console.log("Profile response:", response);
             setUserData(response.data || { name: "Admin User", email: "admin@example.com" });
         } catch (error) {
             console.error("Failed to fetch profile:", error);
@@ -67,7 +105,6 @@ export default function Admin() {
         try {
             // Fetch All Hero Banners for the list
             const allHeroData = await fetchAllHeroBanners();
-            console.log("allHeroData: ", allHeroData);
 
             if (allHeroData?.data) {
                 setHeroBanners(allHeroData.data);
@@ -165,6 +202,167 @@ export default function Admin() {
         } else if (type === "password") {
             await changePassword(token, data);
         }
+    };
+
+    // Profile Section Handlers
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const token = getToken();
+            await updateProfile(token, profileForm);
+            setUserData(profileForm);
+            showToast("Profile updated successfully!", "success");
+        } catch (error) {
+            console.error("Failed to update profile:", error);
+            showToast(error.response?.data?.message || "Failed to update profile", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+
+        // Validation
+        if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+            showToast("All fields are required", "error");
+            return;
+        }
+
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            showToast("New passwords do not match", "error");
+            return;
+        }
+
+        if (passwordForm.newPassword.length < 6) {
+            showToast("Password must be at least 6 characters", "error");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = getToken();
+            await changePassword(token, {
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword
+            });
+            showToast("Password changed successfully!", "success");
+            setPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: ""
+            });
+        } catch (error) {
+            console.error("Failed to change password:", error);
+            showToast(error.response?.data?.message || "Failed to change password", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getPasswordStrength = (password) => {
+        if (password.length === 0) return "";
+        if (password.length < 6) return "weak";
+        if (password.length < 10) return "medium";
+        return "strong";
+    };
+
+    // Admin Management Handlers
+    const fetchAdmins = async () => {
+        try {
+            const token = getToken();
+            const response = await getAllAdmins(token);
+            setAdmins(response.data || []);
+        } catch (error) {
+            console.error("Failed to fetch admins:", error);
+            showToast("Failed to fetch admins", "error");
+        }
+    };
+
+    const handleCreateAdmin = async (e) => {
+        e.preventDefault();
+
+        if (!adminForm.username || !adminForm.email || !adminForm.password) {
+            showToast("All fields are required", "error");
+            return;
+        }
+
+        if (adminForm.password.length < 6) {
+            showToast("Password must be at least 6 characters", "error");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = getToken();
+            await createAdmin(token, adminForm);
+            showToast("Admin created successfully!", "success");
+            setAdminForm({ username: "", email: "", password: "" });
+            fetchAdmins();
+        } catch (error) {
+            console.error("Failed to create admin:", error);
+            showToast(error.response?.data?.message || "Failed to create admin", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEditAdmin = (admin) => {
+        setEditingAdminId(admin.id);
+        setAdminForm({ username: admin.name, email: admin.email, password: "" });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleUpdateAdmin = async (e) => {
+        e.preventDefault();
+
+        if (!adminForm.username || !adminForm.email) {
+            showToast("Name and email are required", "error");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = getToken();
+            await updateAdmin(token, editingAdminId, {
+                username: adminForm.username,
+                email: adminForm.email
+            });
+            showToast("Admin updated successfully!", "success");
+            setAdminForm({ username: "", email: "", password: "" });
+            setEditingAdminId(null);
+            fetchAdmins();
+        } catch (error) {
+            console.error("Failed to update admin:", error);
+            showToast(error.response?.data?.message || "Failed to update admin", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteAdmin = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this admin? This action cannot be undone.")) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = getToken();
+            await deleteAdmin(token, id);
+            showToast("Admin deleted successfully!", "success");
+            fetchAdmins();
+        } catch (error) {
+            console.error("Failed to delete admin:", error);
+            showToast(error.response?.data?.message || "Failed to delete admin", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingAdminId(null);
+        setAdminForm({ username: "", email: "", password: "" });
     };
 
     // Hero Banner
@@ -1172,6 +1370,270 @@ export default function Admin() {
                     </div>
                 );
 
+            case "profile":
+                return (
+                    <div className="profile-view-container">
+                        {/* Profile Information Card */}
+                        <div className="profile-card">
+                            <div className="profile-card-header">
+                                <div>
+                                    <h2 className="profile-card-title">Profile Information</h2>
+                                    <p className="profile-card-subtitle">Update your account details</p>
+                                </div>
+                            </div>
+                            <form onSubmit={handleProfileUpdate}>
+                                <div className="input-group">
+                                    <label className="input-label">Full Name</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={profileForm.name}
+                                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                                        placeholder="Enter your full name"
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Email Address</label>
+                                    <input
+                                        type="email"
+                                        className="input-field"
+                                        value={profileForm.email}
+                                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                                        placeholder="Enter your email"
+                                        required
+                                    />
+                                </div>
+                                <div className="button-group">
+                                    <button type="submit" className="btn-save" disabled={loading}>
+                                        {loading ? "Saving..." : "Save Changes"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-cancel"
+                                        onClick={() => setProfileForm({ name: userData.name, email: userData.email })}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Password Change Card */}
+                        <div className="profile-card">
+                            <div className="profile-card-header">
+                                <div>
+                                    <h2 className="profile-card-title">Change Password</h2>
+                                    <p className="profile-card-subtitle">Update your password to keep your account secure</p>
+                                </div>
+                            </div>
+                            <form onSubmit={handlePasswordChange}>
+                                <div className="input-group">
+                                    <label className="input-label">Current Password</label>
+                                    <input
+                                        type="password"
+                                        className="input-field"
+                                        value={passwordForm.currentPassword}
+                                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                                        placeholder="Enter current password"
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input-field"
+                                        value={passwordForm.newPassword}
+                                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                        placeholder="Enter new password (min 6 characters)"
+                                        required
+                                    />
+                                    {passwordForm.newPassword && (
+                                        <>
+                                            <div className="password-strength">
+                                                <div className={`password-strength-bar ${getPasswordStrength(passwordForm.newPassword)}`}></div>
+                                            </div>
+                                            <p className="password-hint">
+                                                Password strength: {getPasswordStrength(passwordForm.newPassword) || "weak"}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input-field"
+                                        value={passwordForm.confirmPassword}
+                                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                                        placeholder="Confirm new password"
+                                        required
+                                    />
+                                </div>
+                                <div className="button-group">
+                                    <button type="submit" className="btn-save" disabled={loading}>
+                                        {loading ? "Changing..." : "Change Password"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-cancel"
+                                        onClick={() => setPasswordForm({
+                                            currentPassword: "",
+                                            newPassword: "",
+                                            confirmPassword: ""
+                                        })}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                );
+
+            case "admin-management":
+                return (
+                    <div className="profile-view-container">
+                        {/* Add Admin Card */}
+                        <div className="profile-card">
+                            <div className="profile-card-header">
+                                <div>
+                                    <h2 className="profile-card-title">
+                                        {editingAdminId ? 'Edit Admin' : 'Add New Admin'}
+                                    </h2>
+                                    <p className="profile-card-subtitle">
+                                        {editingAdminId ? 'Update admin information' : 'Create a new admin account'}
+                                    </p>
+                                </div>
+                            </div>
+                            <form onSubmit={editingAdminId ? handleUpdateAdmin : handleCreateAdmin}>
+                                <div className="input-group">
+                                    <label className="input-label">Full Name *</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={adminForm.username}
+                                        onChange={(e) => setAdminForm({ ...adminForm, username: e.target.value })}
+                                        placeholder="Enter admin full name"
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Email Address *</label>
+                                    <input
+                                        type="email"
+                                        className="input-field"
+                                        value={adminForm.email}
+                                        onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                                        placeholder="Enter admin email"
+                                        required
+                                    />
+                                </div>
+                                {!editingAdminId && (
+                                    <div className="input-group">
+                                        <label className="input-label">Password *</label>
+                                        <input
+                                            type="password"
+                                            className="input-field"
+                                            value={adminForm.password}
+                                            onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                                            placeholder="Enter password (min 6 characters)"
+                                            required
+                                        />
+                                        {adminForm.password && (
+                                            <>
+                                                <div className="password-strength">
+                                                    <div className={`password-strength-bar ${getPasswordStrength(adminForm.password)}`}></div>
+                                                </div>
+                                                <p className="password-hint">
+                                                    Password strength: {getPasswordStrength(adminForm.password) || "weak"}
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                                <div className="button-group">
+                                    <button type="submit" className="btn-save" disabled={loading}>
+                                        {loading ? (editingAdminId ? "Updating..." : "Creating...") : (editingAdminId ? "Update Admin" : "Create Admin")}
+                                    </button>
+                                    {editingAdminId && (
+                                        <button
+                                            type="button"
+                                            className="btn-cancel"
+                                            onClick={handleCancelEdit}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Admin List Card */}
+                        <div className="profile-card">
+                            <div className="profile-card-header">
+                                <div>
+                                    <h2 className="profile-card-title">All Administrators</h2>
+                                    <p className="profile-card-subtitle">Manage existing admin accounts</p>
+                                </div>
+                                <button
+                                    className="btn-save"
+                                    onClick={fetchAdmins}
+                                    style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                                >
+                                    Refresh
+                                </button>
+                            </div>
+                            {admins.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
+                                    No administrators found. Click refresh to load admins.
+                                </p>
+                            ) : (
+                                <div className="table-responsive">
+                                    <table className="hero-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Created At</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {admins.map((admin) => (
+                                                <tr key={admin.id}>
+                                                    <td>{admin.name}</td>
+                                                    <td>{admin.email}</td>
+                                                    <td>{admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : '-'}</td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                                            <button
+                                                                className="btn-action btn-edit"
+                                                                onClick={() => handleEditAdmin(admin)}
+                                                                title="Edit"
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn-action btn-delete"
+                                                                onClick={() => handleDeleteAdmin(admin.id)}
+                                                                title="Delete"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+
             default:
                 return null;
         }
@@ -1184,6 +1646,7 @@ export default function Admin() {
                 onSectionChange={setActiveSection}
                 isOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
+                onLogout={handleLogout}
             />
 
             <main className="admin-main">
@@ -1211,6 +1674,18 @@ export default function Admin() {
                 userData={userData}
                 onSave={handleProfileSave}
             />
+
+            {/* Toast Container */}
+            <div className="toast-container">
+                {toasts.map(toast => (
+                    <Toast
+                        key={toast.id}
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => removeToast(toast.id)}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const API_BASE = import.meta.env.VITE_API_BASE || "https://rs-tours-travels-server.vercel.app";
-// export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+// export const API_BASE = import.meta.env.VITE_API_BASE || "https://rs-tours-travels-server.vercel.app";
+export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
 
 const api = axios.create({
     baseURL: `${API_BASE}/api`,
@@ -67,3 +67,16 @@ export const updateProfile = (token, payload) =>
 
 export const changePassword = (token, payload) =>
     api.put("/auth/change-password", payload, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+// ---- ADMIN MANAGEMENT ----
+export const getAllAdmins = (token) =>
+    api.get("/auth/admins", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+export const createAdmin = (token, payload) =>
+    api.post("/auth/admins", payload, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+export const updateAdmin = (token, id, payload) =>
+    api.put(`/auth/admins/${id}`, payload, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
+
+export const deleteAdmin = (token, id) =>
+    api.delete(`/auth/admins/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data);
