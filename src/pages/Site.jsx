@@ -223,7 +223,7 @@ export default function Site() {
             {/* Navbar & Hero Start */}
             <div className="container-fluid nav-bar p-0">
                 <nav className="navbar navbar-expand-lg navbar-light bg-white px-4 px-lg-5 py-3 py-lg-0">
-                    <a href="#" className="navbar-brand p-0">
+                    <a href="/" className="navbar-brand p-0">
                         <h2 className="display-7 text-secondary m-0">
                             <img src="/img/logo.png" className="img-fluid" alt="" />
                             <b>RS Tours & Travels</b>
