@@ -139,15 +139,6 @@ export default function Site() {
     const addressText = address?.text || "Chowdhury Market (2nd Floor), Barura West Bazar, College Road, Barura, Comilla";
     const logoUrl = logo?.imageUrl || "/img/logo.png";
 
-    // -----
-    // Paste your large JSX here (from the previous conversion) and replace static spots:
-    // - Navbar logo src -> {logoUrl}
-    // - Hotline button text -> {`Hotline: ${hotlineText}`}
-    // - Contact section email/address/hotline -> use emailText/addressText/hotlineText
-    // - Social buttons href -> use social?.facebook etc. (fallback to "#")
-    // - Hero carousel first slide -> use heroImage, heroTopSubtitle, heroTitle, heroSubtitle, heroBtnLabel, heroBtnHref
-    // -----
-
     return (
         <>
             {/* Spinner Start */}
@@ -155,13 +146,11 @@ export default function Site() {
                 id="spinner"
                 className="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center"
             >
-                <div
-                    className="spinner-border text-secondary"
-                    style={{ width: "3rem", height: "3rem" }}
-                    role="status"
-                >
-                    <span className="sr-only">Loading...</span>
-                </div>
+                <img
+                    src="/img/rs tours travels.png"
+                    alt="Loading..."
+                    style={{ width: "200px", height: "150px" }}
+                />
             </div>
             {/* Spinner End */}
 
