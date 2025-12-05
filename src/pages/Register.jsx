@@ -23,7 +23,7 @@ export default function Register() {
 
     return (
         <div className="container py-5">
-            <div className="col-md-5 mx-auto card p-4 shadow">
+            {/* <div className="col-md-5 mx-auto card p-4 shadow">
                 <h3 className="mb-4 text-center">Admin Registration</h3>
                 {msg && <div className="alert alert-info">{msg}</div>}
                 <form onSubmit={handleRegister}>
@@ -35,7 +35,7 @@ export default function Register() {
                 <p className="text-center mt-3">
                     Already have account? <Link to="/login">Login</Link>
                 </p>
-            </div>
+            </div> */}
         </div>
     );
 }

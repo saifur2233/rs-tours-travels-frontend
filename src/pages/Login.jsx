@@ -35,7 +35,6 @@ export default function Login() {
                     <button className="btn btn-primary w-100">Login</button>
                 </form>
                 <p className="text-center mt-3">
-                    No account? <Link to="/register">Register</Link>
                 </p>
             </div>
         </div>
